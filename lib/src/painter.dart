@@ -15,7 +15,7 @@ class AnimatedCircularChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     _paintLabel(canvas, size, labelPainter);
-    _paintChart(canvas, size, animation.value);
+    _paintChart(canvas, size, animation.value, labelPainter);
   }
 
   @override
@@ -31,7 +31,7 @@ class CircularChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     _paintLabel(canvas, size, labelPainter);
-    _paintChart(canvas, size, chart);
+    _paintChart(canvas, size, chart, labelPainter);
   }
 
   @override
@@ -52,7 +52,7 @@ void _paintLabel(Canvas canvas, Size size, TextPainter labelPainter) {
   }
 }
 
-void _paintChart(Canvas canvas, Size size, CircularChart chart) {
+void _paintChart(Canvas canvas, Size size, CircularChart chart, TextPainter labelPainter) {
   final Paint segmentPaint = new Paint()
     ..style = chart.chartType == CircularChartType.Radial
         ? PaintingStyle.stroke
@@ -78,4 +78,30 @@ void _paintChart(Canvas canvas, Size size, CircularChart chart) {
       );
     }
   }
+  if(labelPainter == null) return;
+  var centerTextSpan = labelPainter.text;
+  for(final CircularChartStack stack in chart.stacks) {
+    for(final segment in stack.segments) {
+      if(segment.label?.isEmpty ?? true) continue;
+      labelPainter
+        ..text = TextSpan(text: segment.label, style: TextStyle(color: segment.labelColor))
+        ..layout();
+      labelPainter.paint(
+        canvas,
+        _computeSegmentLabelOffset(
+          size.width / 2, size.height / 2,
+          segment.labelAngle,
+          stack.radius,
+          labelPainter.getFullHeightForCaret(TextPosition(offset: 0), Rect.zero),
+        )
+      );
+    }
+  }
+  labelPainter.text = centerTextSpan;
+}
+
+Offset _computeSegmentLabelOffset(double x, double y, double labelAngle, double radius, double textHeight) {
+  var offsetX = x + Math.sin(labelAngle * _kRadiansPerDegree) * radius / 3 * 2;
+  var offsetY = y - Math.cos(labelAngle * _kRadiansPerDegree) * radius / 3 * 2 - textHeight;
+  return Offset(offsetX, offsetY);
 }
