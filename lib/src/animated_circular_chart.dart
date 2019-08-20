@@ -249,14 +249,28 @@ class AnimatedCircularChartState extends State<AnimatedCircularChart>
     });
   }
 
+  GlobalKey _customPaintKey = GlobalKey();
   @override
   Widget build(BuildContext context) {
-    return new CustomPaint(
-      size: widget.size,
-      painter: new AnimatedCircularChartPainter(
-        _tween.animate(_animation),
-        _labelPainter,
-      ),
+    return new GestureDetector(
+      onTapUp: _onTap,
+      child: new CustomPaint(
+        key: _customPaintKey,
+        size: widget.size,
+        painter: new AnimatedCircularChartPainter(
+          _tween.animate(_animation),
+          _labelPainter,
+        ),
+      )
     );
+  }
+
+  _onTap(TapUpDetails x) {
+    RenderBox renderObject = _customPaintKey.currentContext.findRenderObject();
+    var topLeft = renderObject.localToGlobal(Offset(0,0));
+    var size = renderObject.paintBounds.size;
+    var center = Offset(topLeft.dx + size.width / 2, topLeft.dy + size.height / 2);
+    var tapOffsetFromCenter = x.globalPosition - center;
+    print('$tapOffsetFromCenter');
   }
 }
