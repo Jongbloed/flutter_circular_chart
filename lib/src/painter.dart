@@ -97,7 +97,9 @@ void _paintChart(Canvas canvas, Size size, CircularChart chart, TextPainter labe
       );
     }
   }
-  labelPainter.text = centerTextSpan;
+  labelPainter
+    ..text = centerTextSpan
+    ..layout();
 }
 
 Offset _computeSegmentLabelOffset(double x, double y, double labelAngle, double radius, double textHeight) {

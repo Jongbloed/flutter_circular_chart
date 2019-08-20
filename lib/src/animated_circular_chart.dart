@@ -216,17 +216,13 @@ class AnimatedCircularChartState extends State<AnimatedCircularChart>
   }
 
   void _updateLabelPainter() {
-    if (widget.holeLabel != null) {
-      TextStyle _labelStyle =
-          widget.labelStyle ?? Theme.of(context).textTheme.body2;
-      _labelPainter
-        ..text = new TextSpan(style: _labelStyle, text: widget.holeLabel)
-        ..textDirection = Directionality.of(context)
-        ..textScaleFactor = MediaQuery.of(context).textScaleFactor
-        ..layout();
-    } else {
-      _labelPainter.text = null;
-    }
+    TextStyle _labelStyle =
+        widget.labelStyle ?? Theme.of(context).textTheme.body2;
+    _labelPainter
+      ..text = new TextSpan(style: _labelStyle, text: widget.holeLabel)
+      ..textDirection = Directionality.of(context)
+      ..textScaleFactor = MediaQuery.of(context).textScaleFactor
+      ..layout();
   }
 
   /// Update the data this chart represents and start an animation that will tween
@@ -259,7 +255,7 @@ class AnimatedCircularChartState extends State<AnimatedCircularChart>
       size: widget.size,
       painter: new AnimatedCircularChartPainter(
         _tween.animate(_animation),
-        widget.holeLabel != null ? _labelPainter : null,
+        _labelPainter,
       ),
     );
   }
