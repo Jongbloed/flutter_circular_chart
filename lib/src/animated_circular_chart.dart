@@ -1,3 +1,4 @@
+import 'dart:math' as Math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_circular_chart/src/circular_chart.dart';
@@ -23,6 +24,8 @@ enum SegmentEdgeStyle {
   round,
 }
 
+typedef OnTapSegmentHandler = void Function(CircularSegmentEntry segment);
+
 class AnimatedCircularChart extends StatefulWidget {
   AnimatedCircularChart({
     Key key,
@@ -36,6 +39,7 @@ class AnimatedCircularChart extends StatefulWidget {
     this.holeLabel,
     this.labelStyle,
     this.edgeStyle = SegmentEdgeStyle.flat,
+    this.onTapSegment
   })  : assert(size != null),
         super(key: key);
 
@@ -134,6 +138,8 @@ class AnimatedCircularChart extends StatefulWidget {
 
   @override
   AnimatedCircularChartState createState() => new AnimatedCircularChartState();
+
+  final OnTapSegmentHandler onTapSegment;
 }
 
 /// The state for a circular chart that animates when its data is updated.
@@ -157,6 +163,8 @@ class AnimatedCircularChartState extends State<AnimatedCircularChart>
   final Map<String, int> _stackRanks = <String, int>{};
   final Map<String, int> _entryRanks = <String, int>{};
   final TextPainter _labelPainter = new TextPainter();
+
+  List<_CircularSegmentEntryWithStartAndEndAngle> _firstStackAnglesForTap = [];
 
   @override
   void initState() {
@@ -183,6 +191,28 @@ class AnimatedCircularChartState extends State<AnimatedCircularChart>
       ),
     );
     _animation.forward();
+
+    // TODO @Cleanup This logic is duplicated in stack.dart
+    if(widget.initialChartData.length > 0) {
+      List<CircularSegmentEntry> entries = widget.initialChartData.first.entries;
+      final double valueSum = widget.percentageValues
+        ? 100.0
+        : entries.fold(
+            0.0,
+            (double prev, CircularSegmentEntry element) => prev + element.value,
+          );
+
+      double previousSweepAngle = 0.0;
+      _firstStackAnglesForTap = List.generate(entries.length,
+        (int i) {
+          double segmentAngle = (entries[i].value / valueSum * 360.0);
+          double sweepAngle = segmentAngle + previousSweepAngle;
+          var entryWithAngles = _CircularSegmentEntryWithStartAndEndAngle(previousSweepAngle, sweepAngle, entries[i]);
+          previousSweepAngle = sweepAngle;
+          return entryWithAngles;
+        }
+      );
+    }
   }
 
   @override
@@ -266,11 +296,22 @@ class AnimatedCircularChartState extends State<AnimatedCircularChart>
   }
 
   _onTap(TapUpDetails x) {
+    if(widget.onTapSegment == null) return;
     RenderBox renderObject = _customPaintKey.currentContext.findRenderObject();
     var topLeft = renderObject.localToGlobal(Offset(0,0));
     var size = renderObject.paintBounds.size;
     var center = Offset(topLeft.dx + size.width / 2, topLeft.dy + size.height / 2);
     var tapOffsetFromCenter = x.globalPosition - center;
-    print('$tapOffsetFromCenter');
+    var tapAngle = 90 - Math.atan2(- tapOffsetFromCenter.dy, tapOffsetFromCenter.dx) / Math.pi * 180;
+    if(tapAngle < 0) tapAngle += 360;
+    var matchingEntries = _firstStackAnglesForTap.where(((x) => x.startAngle <= tapAngle && x.endAngle > tapAngle)).toList();
+    assert(matchingEntries.length == 1);
+    widget.onTapSegment(matchingEntries.first.entry);
   }
+}
+
+class _CircularSegmentEntryWithStartAndEndAngle {
+  final double startAngle, endAngle;
+  final CircularSegmentEntry entry;
+  _CircularSegmentEntryWithStartAndEndAngle(this.startAngle, this.endAngle, this.entry);
 }
