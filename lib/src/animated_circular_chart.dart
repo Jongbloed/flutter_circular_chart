@@ -192,7 +192,7 @@ class AnimatedCircularChartState extends State<AnimatedCircularChart>
     );
     _animation.forward();
 
-    _determineTapAngles();
+    _determineTapAngles(widget.initialChartData);
   }
 
   @override
@@ -216,10 +216,10 @@ class AnimatedCircularChartState extends State<AnimatedCircularChart>
     super.dispose();
   }
 
-  void _determineTapAngles() {
+  void _determineTapAngles(List<CircularStackEntry> newChartData) {
     // TODO @Cleanup This logic is duplicated in stack.dart
-    if(widget.initialChartData.length > 0) {
-      List<CircularSegmentEntry> entries = widget.initialChartData.first.entries;
+    if(newChartData.length > 0) {
+      List<CircularSegmentEntry> entries = newChartData.first.entries;
       final double valueSum = widget.percentageValues
           ? 100.0
           : entries.fold(
@@ -262,7 +262,7 @@ class AnimatedCircularChartState extends State<AnimatedCircularChart>
   /// between the old data and this one.
   void updateData(List<CircularStackEntry> data) {
     _assignRanks(data);
-    _determineTapAngles();
+    _determineTapAngles(data);
 
     setState(() {
       _tween = new CircularChartTween(
