@@ -192,27 +192,7 @@ class AnimatedCircularChartState extends State<AnimatedCircularChart>
     );
     _animation.forward();
 
-    // TODO @Cleanup This logic is duplicated in stack.dart
-    if(widget.initialChartData.length > 0) {
-      List<CircularSegmentEntry> entries = widget.initialChartData.first.entries;
-      final double valueSum = widget.percentageValues
-        ? 100.0
-        : entries.fold(
-            0.0,
-            (double prev, CircularSegmentEntry element) => prev + element.value,
-          );
-
-      double previousSweepAngle = 0.0;
-      _firstStackAnglesForTap = List.generate(entries.length,
-        (int i) {
-          double segmentAngle = (entries[i].value / valueSum * 360.0);
-          double sweepAngle = segmentAngle + previousSweepAngle;
-          var entryWithAngles = _CircularSegmentEntryWithStartAndEndAngle(previousSweepAngle, sweepAngle, entries[i]);
-          previousSweepAngle = sweepAngle;
-          return entryWithAngles;
-        }
-      );
-    }
+    _determineTapAngles();
   }
 
   @override
@@ -236,6 +216,29 @@ class AnimatedCircularChartState extends State<AnimatedCircularChart>
     super.dispose();
   }
 
+  void _determineTapAngles() {
+    // TODO @Cleanup This logic is duplicated in stack.dart
+    if(widget.initialChartData.length > 0) {
+      List<CircularSegmentEntry> entries = widget.initialChartData.first.entries;
+      final double valueSum = widget.percentageValues
+          ? 100.0
+          : entries.fold(
+        0.0,
+            (double prev, CircularSegmentEntry element) => prev + element.value,
+      );
+
+      double previousSweepAngle = 0.0;
+      _firstStackAnglesForTap = List.generate(entries.length,
+              (int i) {
+            double segmentAngle = (entries[i].value / valueSum * 360.0);
+            double sweepAngle = segmentAngle + previousSweepAngle;
+            var entryWithAngles = _CircularSegmentEntryWithStartAndEndAngle(previousSweepAngle, sweepAngle, entries[i]);
+            previousSweepAngle = sweepAngle;
+            return entryWithAngles;
+          }
+      );
+    }
+  }
   void _assignRanks(List<CircularStackEntry> data) {
     for (CircularStackEntry stackEntry in data) {
       _stackRanks.putIfAbsent(stackEntry.rankKey, () => _stackRanks.length);
@@ -259,6 +262,7 @@ class AnimatedCircularChartState extends State<AnimatedCircularChart>
   /// between the old data and this one.
   void updateData(List<CircularStackEntry> data) {
     _assignRanks(data);
+    _determineTapAngles();
 
     setState(() {
       _tween = new CircularChartTween(
